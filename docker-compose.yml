@@ -1,0 +1,14 @@
+# Docker compose configuration for smart instant pot project.
+# This defines the containers/services which are used to experiment and run
+# the project.
+version: '3'
+services:
+  lab:
+    build: lab
+    ports:
+      # Pass through port 8888 to host to access lab web interface.
+      - "8888:8888"
+    volumes:
+      # Make a volume to expose all the files in the current directory to the
+      # lab under its default /home/jovyan/work path.
+      - ".:/home/jovyan/work"
