@@ -15,12 +15,15 @@ FROM jupyter/tensorflow-notebook:30f16d52126f
 # won't get the contrib package and will run into major issues.
 RUN pip install opencv-contrib-python
 
-# Install smart instant pot application code.
-# This is installed in develop mode (-e) so it can be modified and run in place.
-# Also note instead of being copied explicitly into the container it is expected
-# to be there already from the file system sync of the parent directory to
-# the Jupyter user work directory.
-RUN pip install -e /home/jovyan/work/smart_instant_pot
+# Install bootstrap / start command script and make it executable.
+# This bootstrap script installs the smart instant pot code (which can't be
+# installed during this build because we want to install it from a mounted
+# volume that won't exist yet) and then starts Jupyter lab.  For some peculiar
+# reason docker requires us to elevate to root to change permissions.
+USER root
+COPY bootstrap.sh /bootstrap.sh
+RUN chmod a+x /bootstrap.sh
 
-# Run Jupyter lab instead of just the Jupyter notebook.
-CMD ["start.sh", "jupyter", "lab"]
+# Go back to the Jupyter lab user and run the bootstrap script.
+USER jovyan
+CMD /bootstrap.sh
