@@ -2,7 +2,7 @@
 # Author: Tony DiCola
 import unittest
 
-from smart_instant_pot.settings import DictSettingsStore, RedisSettingsStore, Settings
+from smart_instant_pot.services.settings import DictSettingsStore, RedisSettingsStore, Settings
 
 
 class TestValues(unittest.TestCase):

@@ -13,7 +13,13 @@ setup(
     version='0.0.1',
     description='Smart Instant Pot monitor using computer vision.',
     packages=find_packages(),
-    install_requires=['opencv-contrib-python', 'redis']
+    install_requires=['redis']
+    # Note this also depends on OpenCV, however it is a big mess to try
+    # installing from Python's PyPi index as there are different binary
+    # versions and many options when compiling from source.  Some PyPi
+    # packages work on Intel & AMD but not on ARM for example.  Unfortunately
+    # this is all just avoided for now and containers that run this code are
+    # responsible for also ensuring OpenCV is installed.
 
     # If there are data files included in your packages that need to be
     # installed, specify them here.

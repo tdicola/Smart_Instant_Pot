@@ -7,13 +7,7 @@ import abc
 
 import redis
 
-
-def build_id(*components):
-    """Generate a string identifier composed of all the string components (in
-    order) and concatenated with a colon ':' between them.  This is useful for
-    generating an identifier or 'path' to a value in a setting store.
-    """
-    return ':'.join(components)
+from smart_instant_pot.services.utils import build_id, to_bytes
 
 
 class SettingsStore(abc.ABC):
@@ -59,20 +53,11 @@ class DictSettingsStore(SettingsStore):
     def __init__(self):
         self._settings = {}
 
-    def _encode(self, val):
-        # Convert a value to a string based representation store as UTF8 bytes
-        # if it isn't already a byte string or value.  This is to strictly abide
-        # by the contract of the SettingsStore interface which follows the
-        # behavior of a redis store (all values are just bytes).
-        if isinstance(val, (bytes, bytearray)):
-            return val
-        return str(val).encode('utf8')
-
     def set(self, key, val):
-        self._settings[key] = self._encode(val)
+        self._settings[key] = to_bytes(val)
 
     def set_default(self, key, val):
-        self._settings.setdefault(key, self._encode(val))
+        self._settings.setdefault(key, to_bytes(val))
 
     def get(self, key):
         return self._settings.get(key, None)
