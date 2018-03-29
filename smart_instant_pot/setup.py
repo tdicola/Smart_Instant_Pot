@@ -13,7 +13,7 @@ setup(
     version='0.0.1',
     description='Smart Instant Pot monitor using computer vision.',
     packages=find_packages(),
-    install_requires=['opencv-contrib-python'],
+    install_requires=['opencv-contrib-python', 'redis']
 
     # If there are data files included in your packages that need to be
     # installed, specify them here.
