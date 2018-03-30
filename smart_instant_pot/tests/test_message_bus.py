@@ -64,7 +64,7 @@ class TestSimpleMessageBus(unittest.TestCase):
         self.assertEqual(len(callback_calls), 0)
 
 
-@unittest.skip("Redis message bus integration tests must be manually run with redis.")
+#@unittest.skip("Redis message bus integration tests must be manually run with redis.")
 class TestRedisThreadedMessageBus(unittest.TestCase):
 
     REDIS_HOST = 'redis'
@@ -74,7 +74,8 @@ class TestRedisThreadedMessageBus(unittest.TestCase):
                          # state).
 
     def setUp(self):
-        self._bus = RedisThreadedMessageBus(host=self.REDIS_HOST)
+        self._bus = RedisThreadedMessageBus(namespace='test',
+                                            host=self.REDIS_HOST)
 
     def tearDown(self):
         self._bus.deinit()

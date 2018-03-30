@@ -104,11 +104,18 @@ class RedisThreadedMessageBus(MessageBus):
         # access to data structures like the callback dictionary.
         if data is not None and 'channel' in data and 'data' in data:
             channel = data['channel']
+            # Strip out the namespace from start of channel if one was set.
+            # This is to prevent the namespace from 'leaking' into user
+            # callback processing.
+            user_channel = channel
+            if self._namespace is not None:
+                user_channel = user_channel[len(self._namespace)+1:]
             message = data['data']
+            # Now find any registered callbacks and notify them.
             with self._callbacks_lock:
                 if channel in self._callbacks:
                     for cb in self._callbacks[channel]:
-                        cb(channel, message)
+                        cb(user_channel, message)
 
     def _channel(self, channel, as_bytes=True):
         # Construct a channel name using any specified namespace.
