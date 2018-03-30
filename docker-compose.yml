@@ -12,3 +12,7 @@ services:
       # Make a volume to expose all the files in the current directory to the
       # lab under its default /home/jovyan/work path.
       - ".:/home/jovyan/work"
+    depends_on:
+      - redis
+  redis:
+    image: redis:latest
