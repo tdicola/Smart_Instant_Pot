@@ -4,6 +4,7 @@
 # service discovery/registry and general service configuration.
 # Author: Tony DiCola
 import abc
+import configparser
 
 import redis
 
@@ -68,6 +69,78 @@ class DictSettingsStore(SettingsStore):
         except KeyError:
             # Ignore missing key error--the value wasn't set.
             pass
+
+
+class ConfigSettingsStore(SettingsStore):
+    """Settings store that reads and writes settings values to a
+    configparser-based INI format file.
+    """
+
+    def __init__(self, config_file, namespace=None):
+        self._config_file = config_file
+        self._config = configparser.ConfigParser()
+        self._config.read_file(self._config_file)
+        self._namespace = namespace
+
+    def _config_components(self, key):
+        # Return the configparser parent section and child option name for the
+        # specified setting key.  Will ensure the parent section exists and
+        # create it if necessary.  A 2-tuple of the configparser section object
+        # and child option name (as a string) are returned.
+        # First break the key into its component parts, the setting class name
+        # and the setting name.  We use these parts to identify the section
+        # and option inside the config file where this value is stored.
+        section, option = key.split(':')
+        if self._namespace is not None:
+            # Put the namespace in front of the section name (separated by a
+            # configparser safe period delimeter) if it was set.
+            section = '{0}.{1}'.format(self._namespace, section)
+        # Ensure the section exists in the config file.
+        if not self._config.has_section(section):
+            self._config.add_section(section)
+        return self._config[section], option
+
+    def _to_str(self, val):
+        # Ensure the provided value is a UTF8 string representation that can
+        # be stored in the config file.  Will convert byte and bytes objects to
+        # UTF8 strings.
+        if isinstance(val, str):
+            return val
+        if isinstance(val, (bytes, bytearray)):
+            return val.decode('utf8')
+        else:
+            return str(val)
+
+    def set(self, key, val):
+        section, option = self._config_components(key)
+        section[option] = self._to_str(val)
+
+    def set_default(self, key, val):
+        section, option = self._config_components(key)
+        section.setdefault(option, self._to_str(val))
+
+    def get(self, key):
+        section, option = self._config_components(key)
+        val = section.get(option, None)
+        if val is not None:
+            val = to_bytes(val)
+        return val
+
+    def delete(self, key):
+        section, option = self._config_components(key)
+        try:
+            del section[option]
+        except KeyError:
+            # Ignore missing key error--the value wasn't set.
+            pass
+
+    def write(self):
+        """Write the current settings back to the config file."""
+        # Seek back to start of the file, write current settings, then
+        # truncate any remaining old data from the file.
+        self._config_file.seek(0)
+        self._config.write(self._config_file)
+        self._config_file.truncate()
 
 
 class RedisSettingsStore(SettingsStore):
@@ -194,7 +267,12 @@ class Settings:
                 return val.decode(self._encoding)
             return val
 
-    def __init__(self, store, name=None):
+    def __init__(self, store=None, name=None):
+        # Default to an isolated in memory dictionary settings store if none is
+        # provided.  This is great for simple use cases that don't need durable
+        # settings.
+        if store is None:
+            store = DictSettingsStore()
         self._store = store
         # Use the name of this class instance if no explicit name is specified.
         if name is None:

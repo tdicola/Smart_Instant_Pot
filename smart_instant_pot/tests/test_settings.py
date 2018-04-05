@@ -1,8 +1,9 @@
 # Smart Instant Pot Settings Tests
 # Author: Tony DiCola
+import io
 import unittest
 
-from smart_instant_pot.services.settings import DictSettingsStore, RedisSettingsStore, Settings
+from smart_instant_pot.services.settings import *
 
 
 class TestValues(unittest.TestCase):
@@ -30,6 +31,11 @@ class TestValues(unittest.TestCase):
     def setUp(self):
         # By default use an in memory dictionary setting store.
         self.store = DictSettingsStore()
+
+    def test_no_store_defaults_to_dict_store(self):
+        settings = self.TestSettings()
+        settings.raw_value = 10
+        self.assertEqual(settings.raw_value, b'10')
 
     def test_raw_value_set_and_get(self):
         # Basic test of setting and getting a raw byte string value setting.
@@ -118,7 +124,88 @@ class TestValues(unittest.TestCase):
         self.assertEqual(settings.str_encoding, 'Hello world')
 
 
-@unittest.skip("Redis setting integration tests must be manually run with redis.")
+class TestConfigSettings(unittest.TestCase):
+    # Configparser setting store tests.
+
+    class TestSettings(Settings):
+
+        raw_value = Settings.Value()
+
+        raw_default = Settings.Value(default=b'foo')
+
+    def test_raw_value_set_and_get(self):
+        # Basic test of setting and getting a raw byte string value setting.
+        config_file = io.StringIO()
+        store = ConfigSettingsStore(config_file)
+        settings = self.TestSettings(store)
+        settings.raw_value = 10
+        self.assertEqual(settings.raw_value, b'10')
+
+    def test_raw_value_delete_and_get(self):
+        # Basic test of setting, deleting, and getting a raw byte string value
+        # setting.
+        config_file = io.StringIO()
+        store = ConfigSettingsStore(config_file)
+        settings = self.TestSettings(store)
+        settings.raw_value = 10
+        del settings.raw_value
+        self.assertIsNone(settings.raw_value)
+
+    def test_default_value_set(self):
+        # Test that a setting with a default value will have its value set on
+        # creation.
+        config_file = io.StringIO()
+        store = ConfigSettingsStore(config_file)
+        settings = self.TestSettings(store)
+        self.assertEqual(settings.raw_default, b'foo')
+
+    def test_default_value_doesnt_override_previous_value(self):
+        # Test that a setting with a default value will not override a value
+        # already set in the store.
+        config_file = io.StringIO()
+        store = ConfigSettingsStore(config_file)
+        settings = self.TestSettings(store)
+        settings.raw_default = b'bar'
+        settings = self.TestSettings(store)
+        self.assertEqual(settings.raw_default, b'bar')
+
+    def test_namespace(self):
+        # Test a namespace on the settings store isolates it from other settings.
+        config_file = io.StringIO()
+        store = ConfigSettingsStore(config_file)
+        settings = self.TestSettings(store)
+        settings.raw_value = b'bar'
+        store2 = ConfigSettingsStore(config_file, namespace='test')
+        settings = self.TestSettings(store2)
+        self.assertIsNone(settings.raw_value)
+
+    def test_write(self):
+        # Test you can write settings back to a file in the expectd INI format.
+        config_file = io.StringIO()
+        store = ConfigSettingsStore(config_file)
+        settings = self.TestSettings(store)
+        settings.raw_value = b'bar'
+        store.write()
+        self.assertEqual(config_file.getvalue().strip(),
+                         '[TestSettings]\nraw_default = foo\nraw_value = bar')
+
+    def test_existing_value(self):
+        # Test a setting already in the config file is read correctly.
+        config_file = io.StringIO('[TestSettings]\nraw_value = bar')
+        store = ConfigSettingsStore(config_file)
+        settings = self.TestSettings(store)
+        self.assertEqual(settings.raw_value, b'bar')
+
+    def test_existing_value_for_setting_with_default(self):
+        # Test a setting already in the config file is read correctly even if
+        # a default value was specified (i.e. default is ignored).
+        config_file = io.StringIO('[TestSettings]\nraw_default = baz')
+        store = ConfigSettingsStore(config_file)
+        settings = self.TestSettings(store)
+        self.assertEqual(settings.raw_default, b'baz')
+
+
+@unittest.skip('Redis setting integration tests must be manually run with redis.')
 class TestRedisSettings(unittest.TestCase):
     # Redis-backed setting store tests.  These verify the RedisSettingsStore
     # class and require a redis instance to be running at the specified host
