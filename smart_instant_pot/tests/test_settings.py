@@ -28,6 +28,8 @@ class TestValues(unittest.TestCase):
 
         str_encoding = Settings.StrValue(encoding='utf16')
 
+        bool_value = Settings.BoolValue()
+
     def setUp(self):
         # By default use an in memory dictionary setting store.
         self.store = DictSettingsStore()
@@ -89,7 +91,6 @@ class TestValues(unittest.TestCase):
 
     def test_int_not_set_is_none(self):
         # Test an integer that has not been set will read a value of None.
-
         settings = self.TestSettings(self.store)
         self.assertIsNone(settings.int_value)
 
@@ -101,13 +102,11 @@ class TestValues(unittest.TestCase):
 
     def test_float_not_set_is_none(self):
         # Test a float that has not been set will read a value of None.
-
         settings = self.TestSettings(self.store)
         self.assertIsNone(settings.float_value)
 
     def test_str_set_and_get(self):
         # Basic test of setting and getting a string value setting.
-
         settings = self.TestSettings(self.store)
         settings.str_value = 'Hello world'
         self.assertEqual(settings.str_value, 'Hello world')
@@ -122,6 +121,17 @@ class TestValues(unittest.TestCase):
         settings = self.TestSettings(self.store)
         settings.str_encoding = 'Hello world'.encode('utf16')
         self.assertEqual(settings.str_encoding, 'Hello world')
+
+    def test_bool_set_and_get(self):
+        # Basic test of setting and getting a float value setting.
+        settings = self.TestSettings(self.store)
+        settings.bool_value = True
+        self.assertTrue(settings.bool_value)
+
+    def test_bool_not_set_is_none(self):
+        # Test a float that has not been set will read a value of None.
+        settings = self.TestSettings(self.store)
+        self.assertIsNone(settings.bool_value)
 
 
 class TestConfigSettings(unittest.TestCase):

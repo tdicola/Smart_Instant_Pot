@@ -267,6 +267,25 @@ class Settings:
                 return val.decode(self._encoding)
             return val
 
+    class BoolValue(Value):
+        """A boolean settings value descriptor.  Reading this value will return a
+        bool value instead of a byte string (or None if it's not set).
+        """
+
+        def __init__(self, encoding='utf8', **kwargs):
+            super().__init__(**kwargs)
+            self._encoding = encoding
+
+        def __set__(self, obj, val):
+            val = 'True' if val else 'False'
+            super().__set__(obj, val)
+
+        def __get__(self, obj, type=None):
+            val = super().__get__(obj, type)
+            if val is not None:
+                return True if val == b'True' else False
+            return val
+
     def __init__(self, store=None, name=None):
         # Default to an isolated in memory dictionary settings store if none is
         # provided.  This is great for simple use cases that don't need durable
